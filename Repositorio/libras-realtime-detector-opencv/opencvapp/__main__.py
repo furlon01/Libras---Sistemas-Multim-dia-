@@ -10,7 +10,7 @@ def main():
     camera = cv2.VideoCapture(0)
     print("Camera is opened, press 'ESC' to close the camera.")
 
-    DEBUG = True  # imprime label + confiança de cada frame no terminal; desligue depois de calibrar
+    DEBUG = False  # imprime label + confiança de cada frame no terminal
 
     captions = CaptionManager(
         required_repeats=10,      # confirma quando o mesmo label se repetir 10x seguidas
@@ -19,6 +19,12 @@ def main():
         output_path="legendas.srt",
     )
     tts = TTSManager()
+
+    # --- gravação do vídeo da sessão (necessário pra simulação da TV 3.0) ---
+    RECORD_VIDEO = True
+    video_writer = None
+    RECORD_FPS = 20.0  # ajuste conforme o fps real da sua câmera/máquina
+    video_path = "session_video.avi"
 
     try:
         while True:
@@ -39,6 +45,14 @@ def main():
 
                 caption_to_show = captions.current_caption() or ""
                 frame = draw_label(preprocessed_image_landmarks, caption_to_show)
+
+                if RECORD_VIDEO:
+                    if video_writer is None:
+                        h, w = frame.shape[:2]
+                        fourcc = cv2.VideoWriter_fourcc(*"XVID")
+                        video_writer = cv2.VideoWriter(video_path, fourcc, RECORD_FPS, (w, h))
+                    video_writer.write(frame)
+
                 cv2.imshow('Libras SLT', frame)
 
             except Exception as e:
@@ -53,6 +67,9 @@ def main():
         print(f"Legendas salvas em: {srt_path}")
         tts.stop()
         camera.release()
+        if video_writer is not None:
+            video_writer.release()
+            print(f"Vídeo da sessão salvo em: {video_path}")
         cv2.destroyAllWindows()
 
 
