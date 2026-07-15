@@ -1,33 +1,60 @@
 import cv2
-import numpy as np
 
 from .preprocess import preprocess_image, draw_label
-from .model import tflite_predict
+from .model import tflite_predict_with_confidence
+from .caption_manager import CaptionManager
+from .tts_manager import TTSManager
+
 
 def main():
-  camera = cv2.VideoCapture(0)
-  print("Camera is opened, press 'ESC' to close the camera.")
-  
-  while True:
-    ret, image = camera.read()
-    #image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-    # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-    
+    camera = cv2.VideoCapture(0)
+    print("Camera is opened, press 'ESC' to close the camera.")
+
+    DEBUG = True  # imprime label + confiança de cada frame no terminal; desligue depois de calibrar
+
+    captions = CaptionManager(
+        required_repeats=10,      # confirma quando o mesmo label se repetir 10x seguidas
+        min_confidence=0.0,       # 0.0 = ignora confiança, conta toda repetição
+        ignored_labels={"Suor"}, # labels que devem ser sempre ignorados (falso-positivo conhecido)
+        output_path="legendas.srt",
+    )
+    tts = TTSManager()
+
     try:
-      preprocessed_image, preprocessed_image_landmarks = preprocess_image(image)
-      prediction = tflite_predict(preprocessed_image)
-      cv2.imshow('Libras SLT', draw_label(preprocessed_image_landmarks, prediction))
+        while True:
+            ret, image = camera.read()
+            if not ret:
+                continue
 
-    except Exception as e:
-      print(e)
-      continue
+            try:
+                preprocessed_image, preprocessed_image_landmarks = preprocess_image(image)
+                label, confidence = tflite_predict_with_confidence(preprocessed_image)
 
-    keyboard_input = cv2.waitKey(1)
-    if keyboard_input == 27:
-      break
+                if DEBUG:
+                    print(f"label={label!r}  confidence={confidence:.3f}")
 
-  camera.release()
-  cv2.destroyAllWindows()
+                new_word = captions.update(label, confidence)
+                if new_word:
+                    tts.speak(new_word)  # fala só quando o sinal muda/estabiliza
+
+                caption_to_show = captions.current_caption() or ""
+                frame = draw_label(preprocessed_image_landmarks, caption_to_show)
+                cv2.imshow('Libras SLT', frame)
+
+            except Exception as e:
+                print(e)
+                continue
+
+            keyboard_input = cv2.waitKey(1)
+            if keyboard_input == 27:
+                break
+    finally:
+        srt_path = captions.finalize()
+        print(f"Legendas salvas em: {srt_path}")
+        tts.stop()
+        camera.release()
+        cv2.destroyAllWindows()
+
 
 if __name__ == '__main__':
-  main()
+    main()
