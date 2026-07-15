@@ -1,6 +1,9 @@
 import re
 from dataclasses import dataclass
 
+"""
+Interpreta o arquivo .srt de legendas gerado
+"""
 
 @dataclass
 class SrtEntry:

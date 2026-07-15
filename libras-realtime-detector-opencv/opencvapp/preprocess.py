@@ -10,6 +10,9 @@ from mediapipe.tasks.python import vision
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 
+"""
+Recebe o Frame da camera e passa ele pelo Google Media Pipe
+"""
 
 model_path = './hand_landmarker.task'
 

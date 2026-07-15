@@ -11,5 +11,5 @@ pip install -r requirements.txt
 Para executar o app basta rodar:
 
 ```sh
-python -m opencvapp
+python run_pipeline.py
 ```

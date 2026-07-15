@@ -7,20 +7,7 @@ import pyttsx3
 class TTSManager:
     """
     Fala frases em uma thread separada, para não travar o loop de captura
-    de vídeo (pyttsx3.runAndWait() é bloqueante).
-
-    IMPORTANTE: no Windows, o driver SAPI5 do pyttsx3 tem um bug conhecido
-    onde reaproveitar a MESMA instância de engine para vários say()/
-    runAndWait() sucessivos trava silenciosamente após a primeira fala
-    (sem lançar erro nenhum). Por isso aqui criamos uma engine NOVA a cada
-    frase falada — resolve o problema, ao custo de um pequeno overhead de
-    inicialização por frase (geralmente imperceptível).
-
-    Uso:
-        tts = TTSManager()
-        tts.speak("Oi")
-        ...
-        tts.stop()   # ao encerrar o programa
+    de vídeo 
     """
 
     def __init__(self, rate: int = 170, voice_hint: str = "brazil"):

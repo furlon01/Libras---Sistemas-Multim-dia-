@@ -1,5 +1,30 @@
 import time
 
+# Os rótulos do modelo (dict.txt) foram nomeados sem acento pra treinar o
+# modelo -- ex: "Nao", "Tres", "Voce", "Medico", "Pressao", "Remedio",
+# "Sentir_mal". Usar esse texto cru direto na legenda/TTS faz a fala
+# sintetizada sair errada (ex: "Nao" é lido como "nau", não "não").
+#
+# Esse mapa traduz o rótulo cru (usado internamente pro reconhecimento,
+# sem tocar nele) para o texto correto em português, usado SÓ na hora de
+# escrever a legenda e de falar via TTS.
+DISPLAY_LABELS = {
+    "Tres": "Três",
+    "Nao": "Não",
+    "Remedio": "Remédio",
+    "Voce": "Você",
+    "Medico": "Médico",
+    "Pressao": "Pressão",
+    "Sentir_mal": "Sentir mal",
+}
+
+
+def _to_display(label: str) -> str:
+    """Converte um rótulo cru do modelo pro texto correto em português
+    (com acentuação), usado na legenda e na fala. Rótulos que já estão
+    corretos (não estão no mapa) são retornados sem alteração."""
+    return DISPLAY_LABELS.get(label, label)
+
 
 def _format_srt_time(seconds: float) -> str:
     """Converte segundos (float) para o formato HH:MM:SS,mmm exigido pelo .srt"""
@@ -60,22 +85,28 @@ class CaptionManager:
         self._last_label = None
         self._repeat_count = 0
 
-        self._current_word = None       # palavra confirmada exibida atualmente
+        self._current_word = None       # texto de exibição (com acento) da legenda atual
+        self._current_word_raw = None   # rótulo cru do modelo, usado só pra comparação/dedup
         self._current_word_start = None # timestamp (s) de quando ela começou
 
         self._subtitles = []  # lista de (index, start_s, end_s, text)
         self._index = 1
 
-    def mark_start(self):
+    def mark_start(self, start_time: float | None = None):
         """
         Define o instante zero para todos os timestamps gerados a partir
         daqui. Deve ser chamado no momento em que o primeiro frame do
         vídeo da sessão é efetivamente gravado -- não na criação do
         objeto -- para manter legendas/áudio sincronizados com o vídeo.
+
+        Aceita um `start_time` explícito (de time.time()) pra garantir
+        que o relógio das legendas seja EXATAMENTE o mesmo usado para
+        timestampar os frames do vídeo (evita qualquer diferença, ainda
+        que mínima, entre duas chamadas separadas de time.time()).
         Chamadas subsequentes são ignoradas (idempotente).
         """
         if self._start_time is None:
-            self._start_time = time.time()
+            self._start_time = start_time if start_time is not None else time.time()
 
     def _elapsed(self) -> float:
         if self._start_time is None:
@@ -119,12 +150,14 @@ class CaptionManager:
             self._last_label = label
             self._repeat_count = 1
 
-        if self._repeat_count >= self.required_repeats and label != self._current_word:
+        if self._repeat_count >= self.required_repeats and label != self._current_word_raw:
+            display_text = _to_display(label)
             now = self._elapsed()
             self._close_current_subtitle(now)
-            self._current_word = label
+            self._current_word_raw = label
+            self._current_word = display_text
             self._current_word_start = now
-            return label  # sinal novo confirmado -> dispara TTS/legenda
+            return display_text  # sinal novo confirmado -> dispara TTS/legenda
 
         return None
 

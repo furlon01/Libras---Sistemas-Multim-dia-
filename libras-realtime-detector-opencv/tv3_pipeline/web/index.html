@@ -4,21 +4,54 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Libras 3.0 — Simulação de Transmissão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/4.7.4/dash.all.min.js"></script>
 <style>
   :root{
     --bg: #10171A;
+    --panel: #182226;
+    --panel-2: #1F2C31;
     --hairline: #2B3A40;
     --text: #E7EEF0;
-    --signal: #F2B134;
+    --muted: #7E9098;
+    --signal: #F2B134;     /* âmbar de monitor de transmissão */
+    --signal-dim: #6E551C;
+    --libras: #3ECFC1;     /* ciano para a faixa de Libras/interpretação */
+    --danger: #E4572E;
   }
   *{ box-sizing: border-box; }
   html,body{
     margin:0; padding:0; height:100%;
     background: var(--bg);
     color: var(--text);
-    font-family: system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+  .mono{ font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-mark{
+    width:34px; height:34px; border-radius:8px;
+    background: linear-gradient(135deg, var(--signal), var(--libras));
     display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:#0B1113; font-size:15px;
+  }
+  .brand-title{ font-size:15px; font-weight:500; letter-spacing:.2px; }
+  .brand-title span{ color: var(--muted); font-weight:400; }
+  .badge{
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    color: var(--signal); border:1px solid var(--signal-dim);
+    padding: 4px 10px; border-radius: 999px; letter-spacing: .06em;
+  }
+
+  main{
+    max-width: 980px; margin: 0 auto; padding: 28px;
+    display:flex; flex-direction:column; gap:18px;
   }
 
   .stage{
@@ -27,16 +60,34 @@
     border-radius: 14px;
     overflow:hidden;
     border: 1px solid var(--hairline);
-    width: min(980px, 96vw);
     aspect-ratio: 16/9;
   }
   .stage video{ width:100%; height:100%; object-fit:contain; background:#000; }
   .stage video::cue{
-    font-family: system-ui, sans-serif;
+    font-family:'Space Grotesk', sans-serif;
     font-size: 1.1em;
     background: rgba(10,14,16,.75);
     color: var(--text);
     padding: .15em .4em;
+  }
+
+  .live-tag{
+    position:absolute; top:14px; left:14px;
+    display:flex; align-items:center; gap:6px;
+    background: rgba(10,14,16,.7); backdrop-filter: blur(4px);
+    padding: 5px 10px; border-radius: 999px;
+    font-family:'JetBrains Mono', monospace; font-size: 11px; letter-spacing:.08em;
+  }
+  .live-dot{
+    width:7px; height:7px; border-radius:50%;
+    background: var(--danger);
+    box-shadow: 0 0 0 0 rgba(228,87,46,.6);
+    animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow: 0 0 0 0 rgba(228,87,46,.55); }
+    70%{ box-shadow: 0 0 0 8px rgba(228,87,46,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(228,87,46,0); }
   }
 
   .unmute-overlay{
@@ -52,9 +103,9 @@
   }
   .unmute-btn{
     display:flex; align-items:center; gap:10px;
-    background: #182226; border:1px solid var(--signal);
+    background: var(--panel); border:1px solid var(--signal);
     color: var(--text); padding: 12px 20px; border-radius: 999px;
-    font-family: system-ui, sans-serif; font-size:14px; font-weight:500;
+    font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:500;
   }
   .unmute-btn .dot{
     width:9px; height:9px; border-radius:50%;
@@ -65,20 +116,31 @@
 </head>
 <body>
 
-<div class="stage">
-  <video id="player" playsinline muted autoplay>
-    <track id="captionTrack" kind="subtitles" srclang="pt-BR" label="Português" src="legendas.vtt" default>
-  </video>
-  <!--
-    A audiodescrição é servida como um arquivo único (não segmentado) e
-    tocada aqui como um <audio> comum, sincronizado por currentTime com
-    o vídeo -- evita o atraso de trocar de faixa dentro do DASH.
-  -->
-  <audio id="audiodesc" src="audiodescricao.m4a" preload="auto"></audio>
-  <div id="unmuteOverlay" class="unmute-overlay">
-    <div class="unmute-btn"><span class="dot"></span> Clique para ativar o áudio</div>
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark mono">L3</div>
+    <div class="brand-title">Libras 3.0 <span>· app demonstrativo de emissora</span></div>
   </div>
+  <div class="badge mono">DASH · SIMULAÇÃO</div>
 </div>
+
+<main>
+  <div class="stage">
+    <div class="live-tag"><span class="live-dot"></span> TRANSMITINDO</div>
+    <video id="player" playsinline muted autoplay>
+      <track id="captionTrack" kind="subtitles" srclang="pt-BR" label="Português" src="legendas.vtt" default>
+    </video>
+    <!--
+      A audiodescrição é servida como um arquivo único (não segmentado) e
+      tocada aqui como um <audio> comum, sincronizado por currentTime com
+      o vídeo -- evita o atraso de trocar de faixa dentro do DASH.
+    -->
+    <audio id="audiodesc" src="audiodescricao.m4a" preload="auto" muted></audio>
+    <div id="unmuteOverlay" class="unmute-overlay">
+      <div class="unmute-btn"><span class="dot"></span> Clique para ativar o áudio</div>
+    </div>
+  </div>
+</main>
 
 <script>
   const video = document.getElementById('player');
@@ -98,20 +160,49 @@
     }
   });
 
+  // O <audio> de audiodescrição toca MUDO desde o início, em sincronia
+  // com o vídeo (autoplay mudo é sempre permitido pelo navegador, assim
+  // como fazemos com o próprio <video>). O clique em "ativar áudio" só
+  // DESMUTA os dois -- nunca chama play() com som fora do gesto do
+  // clique, que era o que causava o NotAllowedError mesmo dentro do
+  // handler (o áudio ainda não tinha dados suficientes carregados na
+  // hora do clique, então o navegador negava a reprodução).
+  function trySyncPlay() {
+    audiodesc.currentTime = video.currentTime;
+    const playPromise = audiodesc.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // muted autoplay quase nunca falha, mas se falhar, tenta de novo
+        // quando os dados estiverem prontos (ainda mudo, sem gesto necessário)
+        audiodesc.addEventListener('canplay', function retry() {
+          audiodesc.removeEventListener('canplay', retry);
+          audiodesc.currentTime = video.currentTime;
+          audiodesc.play().catch(() => {});
+        });
+      });
+    }
+  }
+
   function enableAudio() {
     video.muted = false;
-    video.play().catch(() => {});
-    audiodesc.currentTime = video.currentTime;
-    audiodesc.play().catch(() => {});
+    audiodesc.muted = false;
+    if (video.paused) video.play().catch((err) => console.error('video.play() falhou:', err.name, err.message));
+    if (audiodesc.paused) {
+      audiodesc.currentTime = video.currentTime;
+      audiodesc.play().catch((err) => console.error('audiodesc.play() falhou:', err.name, err.message));
+    }
     unmuteOverlay.classList.add('hidden');
+    console.log('[enableAudio]', {
+      videoPaused: video.paused, videoMuted: video.muted,
+      audiodescPaused: audiodesc.paused, audiodescMuted: audiodesc.muted,
+      audiodescVolume: audiodesc.volume, audiodescReadyState: audiodesc.readyState,
+      audiodescCurrentTime: audiodesc.currentTime, videoCurrentTime: video.currentTime,
+    });
   }
   unmuteOverlay.addEventListener('click', enableAudio);
 
   // sincronismo do <audio> de audiodescrição com o vídeo
-  video.addEventListener('play', () => {
-    audiodesc.currentTime = video.currentTime;
-    audiodesc.play().catch(() => {});
-  });
+  video.addEventListener('play', trySyncPlay);
   video.addEventListener('pause', () => audiodesc.pause());
   video.addEventListener('seeking', () => {
     audiodesc.currentTime = video.currentTime;
@@ -121,6 +212,26 @@
       audiodesc.currentTime = video.currentTime;
     }
   });
+
+  audiodesc.addEventListener('error', () => {
+    const err = audiodesc.error;
+    console.error('Elemento <audio> de audiodescrição deu erro ao carregar:', err && err.code, err && err.message);
+  });
+
+  // O Chrome pode pausar sozinho um vídeo mudo tocando em segundo plano
+  // (aba fora de foco, minimizada, ou outra janela/DevTools em foco) pra
+  // economizar energia -- isso derruba o vídeo e, por sincronismo, a
+  // audiodescrição junto. Quando a aba volta a ficar visível/em foco,
+  // tenta retomar a reprodução automaticamente.
+  function resumeIfPaused() {
+    if (video.paused && !video.ended) {
+      video.play().catch(() => {});
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) resumeIfPaused();
+  });
+  window.addEventListener('focus', resumeIfPaused);
 </script>
 
 </body>

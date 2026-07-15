@@ -1,10 +1,5 @@
 """
-Converte legendas.srt (gerado pelo CaptionManager) para o formato WebVTT,
-que é o formato de legenda que navegadores/players HTML5 entendem
-nativamente (via <track kind="subtitles">).
-
-Uso:
-    python srt_to_vtt.py legendas.srt legendas.vtt
+Converte legendas.srt para o formato WebVTT,
 """
 import sys
 

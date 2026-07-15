@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
-
+"""
+Carrega o modelo Tflite e o dicionario de palavras
+"""
 model_path = './model.tflite'
 
 interpreter = tf.lite.Interpreter(model_path=model_path)
