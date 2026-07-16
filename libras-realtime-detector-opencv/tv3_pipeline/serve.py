@@ -1,5 +1,5 @@
 """
-Servidor HTTP local pra "transmitir" a simulação da TV 3.0 na rede.
+Servidor HTTP local
 
 Estrutura de pastas esperada (tudo dentro de uma mesma pasta servida):
     index.html

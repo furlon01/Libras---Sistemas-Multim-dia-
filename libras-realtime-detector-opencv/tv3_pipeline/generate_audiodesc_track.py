@@ -1,16 +1,5 @@
 """
-Gera a trilha de áudio de "audiodescrição" da simulação de TV 3.0:
-sintetiza cada legenda (do legendas.srt) em áudio via TTS e monta uma
-única trilha, com cada fala posicionada exatamente no timestamp em que
-o sinal foi reconhecido — do mesmo jeito que a TV 3.0 entrega uma trilha
-de áudio alternativa sincronizada ao vídeo principal.
-
-Requisitos:
-    pip install pyttsx3
-    ffmpeg precisa estar instalado e no PATH
-
-Uso:
-    python generate_audiodesc_track.py legendas.srt session_video.avi audiodescricao.aac
+Gera a trilha de áudio de "audiodescrição" de forma isolada das palavras
 """
 import subprocess
 import sys

@@ -1,29 +1,7 @@
 """
-Empacota a simulação de transmissão da TV 3.0 em MPEG-DASH:
-  - 1 AdaptationSet de vídeo (a câmera com a pessoa sinalizando =
-    a "janela de intérprete de Libras em tempo real" da TV 3.0)
-  - 1 AdaptationSet de áudio "Original" -> silêncio (a câmera não tem microfone)
-
-A audiodescrição (fala sintetizada via TTS) NÃO entra mais como uma
-segunda AdaptationSet de áudio dentro do pacote DASH. Ela é copiada como
-um arquivo único (não segmentado) pra pasta servida, e tocada no navegador
-como um <audio> HTML5 separado, sincronizado por currentTime com o vídeo.
-
-Por quê: trocar de AdaptationSet de áudio dentro de uma sessão DASH (ex:
-"Original" <-> "Audiodescrição") faz o player descartar o buffer da faixa
-antiga e buscar/decodificar a nova faixa a partir da posição atual --
-com segmentos de alguns segundos, isso é percebido como um atraso toda
-vez que a faixa é trocada. Servindo a audiodescrição como um arquivo
-único carregado por inteiro (preload="auto"), a troca no navegador é
-instantânea, sem essa espera de buffer.
-
-A legenda (WebVTT) também não entra dentro do pacote DASH aqui -- é
+Empacota a simulação em MPEG-DASH:
+A legenda (WebVTT) também não entra dentro do pacote DASH é
 carregada separadamente pelo player HTML5 via <track>.
-
-Requisitos: ffmpeg e ffprobe no PATH.
-
-Uso:
-    python package_dash.py session_video.avi audiodescricao.aac saida_dash/
 """
 import shutil
 import subprocess
@@ -99,15 +77,12 @@ def package(video_path: str, audiodesc_path: str, output_dir: str):
 
     subprocess.run(
         cmd,
-        cwd=output_dir,   # <<< ESTA LINHA É A DIFERENÇA
+        cwd=output_dir, 
         check=True,
     )
 
     # Copia a audiodescrição como arquivo único (sem segmentação DASH) pra
-    # ser tocada no navegador como um <audio> HTML5 comum, evitando o
-    # atraso de troca de AdaptationSet. O nome de destino segue o nome de
-    # origem (ex: audiodescricao.m4a) -- o index.html precisa referenciar
-    # esse mesmo nome/extensão.
+    # ser tocada no navegador como um <audio> HTML5
     audiodesc_output = os.path.join(output_dir, os.path.basename(audiodesc_path))
     shutil.copyfile(audiodesc_path, audiodesc_output)
     print(f"Audiodescrição copiada pra: {audiodesc_output}")
